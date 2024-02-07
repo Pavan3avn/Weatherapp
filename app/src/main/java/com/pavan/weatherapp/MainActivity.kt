@@ -2,6 +2,7 @@ package com.pavan.weatherapp
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.SearchView
 import com.pavan.weatherapp.ApiInterface.Apiinterface
 import com.pavan.weatherapp.Modelclass.WeatherResponse
@@ -23,6 +24,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         searchcity()
+
 
 
     }
@@ -62,11 +64,11 @@ class MainActivity : AppCompatActivity() {
                 if(response.isSuccessful && responsebody!=null){
                     val temperature =  responsebody.main.temp.toString()
                     val humidity = responsebody.main.humidity.toString()
-                    val weather = responsebody.weather.toString()
+                    val weather = responsebody.weather.firstOrNull()?.main?:"unknown"
                     val maxtemp = responsebody.main.temp_max.toString()
                     val mintemp = responsebody.main.temp_min.toString()
-                    val sunrise = responsebody.sys.sunrise.toString()
-                    val sunset = responsebody.sys.sunset.toString()
+                    val sunrise = responsebody.sys.sunrise.toLong()
+                    val sunset = responsebody.sys.sunset.toLong()
                     val windspeed = responsebody.wind.speed.toString()
                     val sealevel = responsebody.main.pressure.toString()
 
@@ -75,20 +77,24 @@ class MainActivity : AppCompatActivity() {
                     binding.humidity.text = "$humidity %"
                     binding.maxtemp.text = "Max Temp:$maxtemp \u2103"
                     binding.mintemp.text  =  "Min Temp:$mintemp \u2103"
-                    binding.sunrise.text = "$sunrise"
-                    binding.windspeed.text = "$windspeed %"
-                    binding.sunset.text = "$sunset"
+                    binding.windspeed.text = "$windspeed m/s"
                     binding.sea.text = "$sealevel hPa"
                     binding.feelslike.text = weather
                     binding.date.text = date()
                     binding.day.text = dayname(System.currentTimeMillis())
                     binding.cityname.text = "$cityname"
+                    binding.sunrise.text = "${time(sunrise)}"
+                    binding.sunset.text = "${time(sunset)}"
+
+                    ChangeBackground(weather);
+
 
                 }
             }
 
             override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                TODO("Not yet implemented")
+                Log.e("mainactivity","error occured")
+
             }
 
         })
@@ -101,10 +107,44 @@ class MainActivity : AppCompatActivity() {
         return sdf.format(Date())
 
     }
+    private fun time(timestamp: Long): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        return sdf.format(Date(timestamp*1000))
+
+    }
 
     private fun dayname(timestamp: Long):String{
         val sdf = SimpleDateFormat("EEEE", Locale.getDefault())
         return sdf.format(Date())
+
+    }
+
+    private fun ChangeBackground(weather : String){
+        when(weather){
+            "Partly clouds","Clouds","Overcast","Mist","Foggy","Haze" ->{
+                binding.root.setBackgroundResource(R.drawable.colud_background)
+                binding.lottieAnimationView.setAnimation(R.raw.cloud);
+            }
+
+            "Clear Sky","Sunny","Clear" ->{
+                binding.root.setBackgroundResource(R.drawable.sunny_background)
+                binding.lottieAnimationView.setAnimation(R.raw.sun)
+            }
+
+            "Light Rain","Drizzle","Moderate Rain","Showers","Heavy Rain" ->{
+                binding.root.setBackgroundResource(R.drawable.rain_background)
+                binding.lottieAnimationView.setAnimation(R.raw.rain)
+            }
+
+            "Light Snow","Moderate Snow","Heavy Snow","Blizzard" ->{
+                binding.root.setBackgroundResource(R.drawable.snow_background)
+                binding.lottieAnimationView.setAnimation(R.raw.snow)
+            }
+
+
+        }
+
+        binding.lottieAnimationView.playAnimation()
 
     }
 
